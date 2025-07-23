@@ -11,3 +11,10 @@ engine = create_engine(SQLITE_DATABASE_URL, connect_args={"check_same_thread": F
 Sessionlocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)  # Create a session local
 
 Base = declarative_base()  # Create a base class for declarative models
+
+def get_db():
+    db = Sessionlocal()  # Creating a new session
+    try:
+        yield db  # Yielding the session for use in dependency injection
+    finally:
+        db.close()  # Closing the session after use

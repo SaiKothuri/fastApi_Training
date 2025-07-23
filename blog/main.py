@@ -6,7 +6,7 @@ from . import schemas  # Importing schemas from the current package
 
 from .import models  # Importing models from the current package
 
-from .database import Sessionlocal, engine # Importing Sessionlocal and engine from database module
+from .database import Sessionlocal, engine, get_db # Importing Sessionlocal and engine from database module
 
 models.Base.metadata.create_all(engine)  # Creating all tables in the database
 
@@ -16,29 +16,38 @@ from sqlalchemy.orm import Session  # Importing Session from SQLAlchemy ORM
 
 from typing import List, Optional  # Importing List and Optional for type hinting
 
-from passlib.context import CryptContext  # Importing CryptoContext for password hashing
+from .import hashing  # Importing Hash class for password hashing
 
-def get_db():
-    db = Sessionlocal()  # Creating a new session
-    try:
-        yield db  # Yielding the session for use in dependency injection
-    finally:
-        db.close()  # Closing the session after use
+from .hashing import Hash  # Importing Hash class for password hashing
 
-@app.post("/blog", status_code=status.HTTP_201_CREATED)  # Defining a POST endpoint to create a new blog
+from .routers import blog  # Importing blog router from routers package
+
+app.include_router(blog.router)  # Including the blog router in the FastAPI application
+
+
+
+
+# def get_db():
+#     db = Sessionlocal()  # Creating a new session
+#     try:
+#         yield db  # Yielding the session for use in dependency injection
+#     finally:
+#         db.close()  # Closing the session after use
+
+@app.post("/blog", status_code=status.HTTP_201_CREATED, tags=['blogs'])  # Defining a POST endpoint to create a new blog
 def create(request : schemas.Blog, db:Session = Depends(get_db)):
-    new_blog = models.Blog(title=request.title, body=request.body)
+    new_blog = models.Blog(title=request.title, body=request.body, user_id=1)  # Creating a new blog model instance, assuming user_id is 1 for simplicity
     db.add(new_blog)
     db.commit()  # Committing the new blog to the database
     db.refresh(new_blog)
     return new_blog
 
-@app.get("/blog", response_model=List[schemas.ShowBlog])  # Defining a GET endpoint to retrieve all blogs
-def get_all(db: Session = Depends(get_db)):
-    blogs = db.query(models.Blog).all()
-    return blogs
+# @app.get("/blog", response_model=List[schemas.ShowBlog], tags=['blogs'])  # Defining a GET endpoint to retrieve all blogs
+# def get_all(db: Session = Depends(get_db)):
+#     blogs = db.query(models.Blog).all()
+#     return blogs
 
-@app.get("/blog/{id}", status_code=status.HTTP_200_OK, response_model=schemas.ShowBlog)  # Defining a GET endpoint to retrieve a blog by ID
+@app.get("/blog/{id}", status_code=status.HTTP_200_OK, response_model=schemas.ShowBlog, tags=['blogs'])  # Defining a GET endpoint to retrieve a blog by ID
 def get_blog(id, response:Response,  db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id).first()
     if not blog:
@@ -48,7 +57,7 @@ def get_blog(id, response:Response,  db: Session = Depends(get_db)):
         
     return blog
 
-@app.delete("/blog/{id}", status_code=status.HTTP_204_NO_CONTENT)  # Defining a DELETE endpoint to remove a blog by ID
+@app.delete("/blog/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=['blogs'])  # Defining a DELETE endpoint to remove a blog by ID
 def destroy(id, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
@@ -57,7 +66,7 @@ def destroy(id, db: Session = Depends(get_db)):
     db.commit()  # Deleting the blog by ID
     return 'Deleted successfully'  # Returning a success message
 
-@app.put("/blog/{id}", status_code=status.HTTP_202_ACCEPTED)  # Defining a PUT endpoint to update a blog by ID
+@app.put("/blog/{id}", status_code=status.HTTP_202_ACCEPTED, tags=['blogs'])  # Defining a PUT endpoint to update a blog by ID
 def update(id, request: schemas.Blog, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
@@ -67,14 +76,27 @@ def update(id, request: schemas.Blog, db: Session = Depends(get_db)):
     return 'Updated successfully'  # Returning a success message
 
 
-pwd_cxt = CryptContext(schemes=["bcrypt"], deprecated="auto")  # Creating a password context for hashing
-
-
-@app.post('/user')
+@app.post('/user', tags=['Users'])
 def create_user(request: schemas.User, db: Session = Depends(get_db)):
-    hashedpassword = pwd_cxt.hash(request.password)  # Hashing the password
-    new_user = models.User(name=request.username, email=request.email, password=hashedpassword)  # Creating a new user model instance
+    # Hashing the password
+    new_user = models.User(name=request.username, email=request.email, password=Hash.bcrypt(request.password))  # Creating a new user model instance
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user  # Returning the newly created user
+
+@app.post('/newuser', response_model=schemas.ShowUser, tags=['Users'])  # Defining a POST endpoint to create a new user
+def create_user(request: schemas.User, db: Session = Depends(get_db)):
+    # Hashing the password
+    new_user = models.User(name=request.username, email=request.email, password=Hash.bcrypt(request.password))  # Creating a new user model instance
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user  # Returning the newly created user
+
+@app.get('/user/{id}', response_model=schemas.ShowUser, tags=['Users'])  # Defining a GET endpoint to retrieve a user by ID
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+    return user
