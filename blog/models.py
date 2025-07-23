@@ -7,3 +7,10 @@ class Blog(Base):
     id = Column(Integer, primary_key=True, index=True)  # Primary key for the Blog model
     title = Column(String, index=True)  # Title of the blog
     body = Column(String)  # Body content of the blog
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)  # Primary key for the User model
+    name = Column(String)
+    email = Column(String)  # Unique email for the user
+    password = Column(String)  # Password for the user
