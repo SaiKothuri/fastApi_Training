@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from typing import List, Optional
+from typing import List
 
 class Blog(BaseModel):
     title: str
@@ -26,15 +26,3 @@ class ShowBlog(BaseModel):
     creator: ShowUser  # Assuming creator is a string, adjust as necessary
     class Config:
         orm_mode = True
-
-class login(BaseModel):
-    username: str
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    email: str | None = None

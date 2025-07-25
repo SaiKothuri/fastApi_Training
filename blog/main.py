@@ -22,15 +22,9 @@ from .hashing import Hash  # Importing Hash class for password hashing
 
 from .routers import blog  # Importing blog router from routers package
 
-from .routers import user  # Importing user router from routers package
-
-from .routers import authentication  # Importing user router from routers package
-
 app.include_router(blog.router)  # Including the blog router in the FastAPI application
 
-app.include_router(user.router)
 
-app.include_router(authentication.router)  # Including the authentication router in the FastAPI application
 
 
 # def get_db():
@@ -100,9 +94,9 @@ def create_user(request: schemas.User, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user  # Returning the newly created user
 
-# @app.get('/users/{id}', response_model=schemas.ShowUser, tags=['Users'])  # Defining a GET endpoint to retrieve a user by ID
-# def get_user(id: int, db: Session = Depends(get_db)):
-#     user = db.query(models.User).filter(models.User.id == id).first()
-#     if not user:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
-#     return user
+@app.get('/user/{id}', response_model=schemas.ShowUser, tags=['Users'])  # Defining a GET endpoint to retrieve a user by ID
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+    return user

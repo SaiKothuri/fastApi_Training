@@ -5,7 +5,6 @@ from langchain.agents import initialize_agent, Tool
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain.agents.agent_types import AgentType
 from dotenv import load_dotenv
-import os
 
 # Load variables from .env file
 load_dotenv()
@@ -27,7 +26,7 @@ tools = [
 # Load API key from environment
 openai_key = os.getenv("OPENAI_API_KEY")
 
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0, openai_api_key=openai_key)
+llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
 agent = initialize_agent(
     tools=tools,
